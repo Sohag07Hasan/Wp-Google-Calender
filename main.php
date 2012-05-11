@@ -5,6 +5,7 @@
  */
 
 define('GCALENDERDIR', dirname(__FILE__));
+define("GCALENDERURL", plugins_url('', __FILE__));
 
 include GCALENDERDIR . '/classes/gc.class.php';
 Gc_Integration :: init();

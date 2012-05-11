@@ -18,7 +18,65 @@ class Gc_Integration{
 		add_action( 'add_meta_boxes', array(get_class(), 'meta_boxes' ));
 		add_action('admin_menu', array(get_class(), 'admin_menu_gc'));
 		add_action('init', array(get_class(), 'initialize_gc'));
+		add_action('admin_enqueue_scripts', array(get_class(), 'js_add'));
+		//add_action('admin_enqueue_style', array(get_class(), 'css_add'));
+		
+		//saving calender data in wp and 
+		add_action('save_post', array(get_class(), 'save_post'), 10, 2);
 	}
+	
+	/*
+	 * saving post data
+	 */
+	static function save_post($post_ID, $post){
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
+		var_dump($post);
+		$cal = $_POST['enable_calender_event'];
+		$title = $_POST['gc-event-title'];
+		$des = $_POST['gc-event-description'];
+		$date = $_POST['gc-event-date'];
+		$time = $_POST['gc-event-time'];
+		
+	}
+	
+	
+	/*
+	 * css add
+	 */
+	static function css_add(){
+		//date picker
+		wp_register_style('query-ui-datepicker-addon_css', GCALENDERURL . '/date-time-picker/css/ui-lightness/jquery-ui-1.8.20.custom.css');
+		wp_enqueue_style('query-ui-datepicker-addon_css');	
+		
+		//time picker
+		wp_register_style('query-ui-timepicker-addon_css', GCALENDERURL . '/date-time-picker/jquery-ui-timepicker-addon.css');
+		wp_enqueue_style('query-ui-timepicker-addon_css');	
+		
+	}
+
+
+
+
+	/*
+	 * js addition
+	 */
+	static function js_add(){
+		wp_enqueue_script('jquery');
+		
+		//date picker
+		wp_register_script('jquery-ui-datepicker-addon_js', GCALENDERURL . '/date-time-picker/js/jquery-ui-1.8.20.custom.min.js');
+		wp_enqueue_script('jquery-ui-datepicker-addon_js');
+		
+		//time picker
+		wp_register_script('jquery-ui-timepicker-addon_js', GCALENDERURL . '/date-time-picker/jquery-ui-timepicker-addon.js');
+		wp_enqueue_script('jquery-ui-timepicker-addon_js');
+		
+				
+		
+		
+		self :: css_add();
+	}
+	
 	
 	/*
 	 * initialize the GC 
@@ -102,7 +160,9 @@ class Gc_Integration{
 			self::$client->setAccessToken($_SESSION['gc_token']);
 		}
 		
-		if (self::$client->getAccessToken()) {		
+		if (self::$client->getAccessToken()) {
+			$calList = self::$calender->calendarList->listCalendarList();
+			
 			include dirname(__FILE__) . '/metabox/metabox.php';
 			$_SESSION['gc_token'] = self::$client->getAccessToken();
 		}

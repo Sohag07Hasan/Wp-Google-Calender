@@ -28,6 +28,11 @@
 			</tr>
 			
 			<tr>
+				<td>Redirect Urls</td>
+				<td><?php echo get_option('siteurl'); ?> </td>
+			</tr>
+			
+			<tr>
 				<td><input type="submit" value="save" class="button-primary"  /></td>
 			</tr>
 		</table>
