@@ -30,16 +30,89 @@ class Gc_Integration{
 	 */
 	static function save_post($post_ID, $post){
 		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
-		var_dump($post);
-		$cal = $_POST['enable_calender_event'];
-		$title = $_POST['gc-event-title'];
-		$des = $_POST['gc-event-description'];
-		$date = $_POST['gc-event-date'];
-		$time = $_POST['gc-event-time'];
+		self::push_to_gc($post_ID, $post);
+		exit;
 		
 	}
 	
 	
+	/*
+	 * push post to the google calender
+	 */
+	static function push_to_gc($post_ID, $post){
+		if($_POST['gc_enabled'] == '1') :
+			$title = self::sanitized_title(trim($_POST['gc-event-title']), $post->post_title);
+			$des = trim($_POST['gc-event-description']);
+			$event_start = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start'])));
+			//$event_end = trim($_POST['gc-event-date_end']) . ' ' .  trim($_POST['gc-event-time_end']);
+			$event_end = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end'])));
+			
+			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
+			var_dump($event);
+			exit;
+						
+		endif;
+	}
+	
+	/*
+	 * set an event to the googel calender and return the event for further use
+	 */
+	static function set_event($title, $des, $event_start, $event_end, $gc_id){
+		self::set_client_calender();
+		if (isset($_SESSION['gc_token'])) {
+			self::$client->setAccessToken($_SESSION['gc_token']);
+		}
+		$event = new Event();
+		$event->setSummary($title);
+		$start = new EventDateTime();
+		$start->setDateTime($event_start);
+		$event->setStart($start);
+		$end = new EventDateTime();
+		$end->setDateTime($event_end);
+		$event->setEnd($end);
+		
+		$attendee1 = new EventAttendee();
+		$attendee1->setEmail('hyde.sohag@gmail.com');
+
+		$attendees = array($attendee1);
+		$event->attendees = $attendees;
+				
+		$createdEvent = self::$calender->events->insert($gc_id, $event);
+		return $createdEvent;
+	}
+
+
+
+
+	/*
+	 * some sanitizing fuction
+	 */
+	static function sanitized_title($et='', $pt=''){
+		if(empty($et) || $et='') return $pt;
+		return $et;
+	}
+	
+	
+	/*
+	 * format the date and time to the google calender format
+	 */
+	static function sanitized_datetime($timestamp=0){
+		
+		 if (!$timestamp) {
+			$timestamp = time();
+		}
+		$date = date('Y-m-d\TH:i:s', $timestamp);
+
+		$matches = array();
+		if (preg_match('/^([\-+])(\d{2})(\d{2})$/', date('O', $timestamp), $matches)) {
+			$date .= $matches[1].$matches[2].':'.$matches[3];
+		} else {
+			$date .= 'Z';
+		}
+		return $date;
+	}
+
+
 	/*
 	 * css add
 	 */

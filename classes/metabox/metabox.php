@@ -1,11 +1,11 @@
 <div class="wrap">
 	<h2>Insert an Event to the Google calender </h2>
-	<p> Enable G calender event <input id="enable_calender_event" type="checkbox" name="enable_calender_event" value="1" /></p>
+	<p> Enable G calender event <input id="enable_calender_event" type="checkbox" name="gc_enabled" value="1" /></p>
 	<table  class="form-table" id="Gcalender_form" style="display: none;">
 		<tr>
 			<td>Select a calender</td>
 			<td colspan="2">
-				<select>
+				<select name="gc_id">
 					<?php
 						if(empty($calList)){
 							echo "<option>No calender found!</option>";
@@ -31,12 +31,15 @@
 		</tr>	
 		
 		<tr>
-			<td>Event Date</td>
-			<td colspan="2"><input id="gc_date_picker" size="60" name="gc-event-date" type="text" value="" /> </td>
+			<td>Event Start Date/Time</td>
+			<td><input class="gc_date_picker" size="20" name="gc-event-date_start" type="text" value="" /> </td>
+			<td><input class="gc_time_picker" size="20" name="gc-event-time_start" type="text" value="" /> </td>
 		</tr>
+		
 		<tr>
-			<td>Event Time</td>
-			<td colspan="2"><input id="gc_time_picker" size="60" name="gc-event-time" type="text" value="" /> </td>
+			<td>Event End Date/Time</td>
+			<td><input class="gc_date_picker" size="20" name="gc-event-date_end" type="text" value="" /> </td>
+			<td><input class="gc_time_picker" size="20" name="gc-event-time_end" type="text" value="" /> </td>
 		</tr>
 		
 	</table>
@@ -44,14 +47,14 @@
 </div>
 <script type="text/javascript">
 	jQuery(document).ready(function($){
-		$('#gc_time_picker').timepicker({
+		$('.gc_time_picker').timepicker({
                    showNowButton: true,
                     showDeselectButton: true,
                     defaultTime: '',  // removes the highlighted time for when the input is empty.
                     showCloseButton: true
                })
 		
-		$('#gc_date_picker').datepicker();
+		$('.gc_date_picker').datepicker();
 		
 		if($('#enable_calender_event').attr('checked') == 'checked'){
 			$('#Gcalender_form').show();
