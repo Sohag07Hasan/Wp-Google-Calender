@@ -282,8 +282,10 @@ class Gc_Integration{
 		//if(isset($_SESSION['gc_token'])) return;
 		
 		//including the api classes
-		include GCALENDERDIR . '/gc-api/src/apiClient.php';
-		include GCALENDERDIR . '/gc-api/src/contrib/apiCalendarService.php';
+		if(!class_exists('apiClient')) :
+			include GCALENDERDIR . '/gc-api/src/apiClient.php';
+			include GCALENDERDIR . '/gc-api/src/contrib/apiCalendarService.php';
+		endif;
 		$gc_info = self::get_calender_access_info();
 		
 		self::$client = new apiClient();
