@@ -23,16 +23,30 @@ class Gc_Integration{
 		
 		//saving calender data in wp and 
 		add_action('save_post', array(get_class(), 'save_post'), 10, 2);
+		
+		//saving the event to the database
+		//add_action('save_the_gc_event', array(get_class(), 'save_event'), 10, 3);
 	}
 	
+	
+	/*
+	 * function with custom hook to save the event id and calender id to the database
+	 */
+	static function save_event($event, $post, $calender){
+		update_post_meta($post->ID, 'gc_enabled', '1');
+		update_post_meta($post->ID, 'event_info', array('cal_id'=>$calender, 'event_id'=>$event['id']));
+	}
+
+
+
+
 	/*
 	 * saving post data
 	 */
 	static function save_post($post_ID, $post){
 		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
 		self::push_to_gc($post_ID, $post);
-		exit;
-		
+			
 	}
 	
 	
@@ -48,9 +62,10 @@ class Gc_Integration{
 			$event_end = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end'])));
 			
 			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
-			var_dump($event);
-			exit;
-						
+			
+			//do_action('save_the_gc_event', $event, $post, $_POST['gc_id']);
+			self:: save_event($event, $post, $_POST['gc_id']);
+			
 		endif;
 	}
 	
@@ -64,6 +79,9 @@ class Gc_Integration{
 		}
 		$event = new Event();
 		$event->setSummary($title);
+		if(strlen($des)>3){
+			$event->setDescription($des);
+		}
 		$start = new EventDateTime();
 		$start->setDateTime($event_start);
 		$event->setStart($start);
@@ -71,12 +89,14 @@ class Gc_Integration{
 		$end->setDateTime($event_end);
 		$event->setEnd($end);
 		
+		/*
 		$attendee1 = new EventAttendee();
 		$attendee1->setEmail('hyde.sohag@gmail.com');
 
 		$attendees = array($attendee1);
 		$event->attendees = $attendees;
-				
+		*/
+		
 		$createdEvent = self::$calender->events->insert($gc_id, $event);
 		return $createdEvent;
 	}
@@ -88,7 +108,7 @@ class Gc_Integration{
 	 * some sanitizing fuction
 	 */
 	static function sanitized_title($et='', $pt=''){
-		if(empty($et) || $et='') return $pt;
+		if(empty($et) || $et=='') return $pt;
 		return $et;
 	}
 	
@@ -225,17 +245,24 @@ class Gc_Integration{
 	 * metabox content
 	 */
 	static function the_box(){
-		
-		self::set_client_calender();
+		if(empty(self::$calender)) {
+			self::set_client_calender();
+		}
 		global $post;
+		$gc_event = array();
 		
 		if (isset($_SESSION['gc_token'])) {
 			self::$client->setAccessToken($_SESSION['gc_token']);
 		}
 		
 		if (self::$client->getAccessToken()) {
-			$calList = self::$calender->calendarList->listCalendarList();
-			
+			$calList = self::$calender->calendarList->listCalendarList();			
+			$enabled = get_post_meta($post->ID, 'gc_enabled', true);
+			if($enabled){
+				$event_meta = get_post_meta($post->ID, 'event_info', true);
+				$gc_event = self::$calender->events->get($event_meta['cal_id'], $event_meta['event_id']);
+				//var_dump($gc_event);
+			}			
 			include dirname(__FILE__) . '/metabox/metabox.php';
 			$_SESSION['gc_token'] = self::$client->getAccessToken();
 		}
@@ -270,5 +297,17 @@ class Gc_Integration{
 		self::$client->setDeveloperKey(trim($gc_info['api_key']));
 		
 		self::$calender = new apiCalendarService(self::$client);
+	}
+	
+	/*
+	 * google calelnder format to normal format 
+	 */
+	static function get_normalized_date($rfc){
+		return date('m/d/Y', strtotime($rfc));
+	}
+	
+	static function get_normalized_time($rfc){
+		
+		return date('H:i', strtotime($rfc));
 	}
 }
