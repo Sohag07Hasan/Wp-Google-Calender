@@ -1,3 +1,14 @@
+<?php
+	if($enabled && !empty($gc_event)):
+?>
+
+<input type="hidden" name="gc_update" value="Y" />
+<input type="hidden" name="gc_prev_id" value="<?php  echo $event_meta['cal_id']; ?>" />
+<input type="hidden" name="event_prev_id" value="<?php echo $gc_event['id']; ?>" />
+
+<?php endif; ?>
+
+
 <div class="wrap">
 	<h2>Insert an Event to the Google calender </h2>
 	<p> Enable G calender event <input id="enable_calender_event" type="checkbox" name="gc_enabled" value="1" <?php checked('1', $enabled); ?> /></p>
@@ -50,8 +61,9 @@
 		$('.gc_time_picker').timepicker({
                    showNowButton: true,
                     showDeselectButton: true,
-                    defaultTime: '',  // removes the highlighted time for when the input is empty.
-                    showCloseButton: true
+                    showPeriod: true,  // removes the highlighted time for when the input is empty.
+                    showCloseButton: true,
+		    showLeadingZero: true
                })
 		
 		$('.gc_date_picker').datepicker();

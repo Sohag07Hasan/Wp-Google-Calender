@@ -29,7 +29,14 @@
 			
 			<tr>
 				<td>Redirect Urls</td>
-				<td><?php echo get_option('siteurl'); ?> </td>
+				<td><input size="60" type="text" value="<?php echo get_option('siteurl') . '/wp-admin/google-calender/redirect=yes'; ?>" readonly /> </td>
+			</tr>
+			
+			<tr>
+				<td>
+					get or set everything
+				</td>
+				<td><a target="_blank" href="https://code.google.com/apis/console?api=calendar">Visit Google calender console</a></td>
 			</tr>
 			
 			<tr>

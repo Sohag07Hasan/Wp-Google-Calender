@@ -32,7 +32,7 @@ class Gc_Integration{
 	/*
 	 * function with custom hook to save the event id and calender id to the database
 	 */
-	static function save_event($event, $post, $calender){
+	static function save_event_info($event, $post, $calender){
 		update_post_meta($post->ID, 'gc_enabled', '1');
 		update_post_meta($post->ID, 'event_info', array('cal_id'=>$calender, 'event_id'=>$event['id']));
 	}
@@ -58,13 +58,13 @@ class Gc_Integration{
 			$title = self::sanitized_title(trim($_POST['gc-event-title']), $post->post_title);
 			$des = trim($_POST['gc-event-description']);
 			$event_start = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start'])));
-			//$event_end = trim($_POST['gc-event-date_end']) . ' ' .  trim($_POST['gc-event-time_end']);
+			
 			$event_end = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end'])));
 			
 			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
 			
 			//do_action('save_the_gc_event', $event, $post, $_POST['gc_id']);
-			self:: save_event($event, $post, $_POST['gc_id']);
+			self:: save_event_info($event, $post, $_POST['gc_id']);
 			
 		endif;
 	}
@@ -73,10 +73,8 @@ class Gc_Integration{
 	 * set an event to the googel calender and return the event for further use
 	 */
 	static function set_event($title, $des, $event_start, $event_end, $gc_id){
-		self::set_client_calender();
-		if (isset($_SESSION['gc_token'])) {
-			self::$client->setAccessToken($_SESSION['gc_token']);
-		}
+		self::set_client_calender();		
+		
 		$event = new Event();
 		$event->setSummary($title);
 		if(strlen($des)>3){
@@ -90,17 +88,45 @@ class Gc_Integration{
 		$event->setEnd($end);
 		
 		/*
+		if (isset($_SESSION['gc_token'])) {
+			self::$client->setAccessToken($_SESSION['gc_token']);
+		}*/
+		
+		/*
 		$attendee1 = new EventAttendee();
 		$attendee1->setEmail('hyde.sohag@gmail.com');
 
 		$attendees = array($attendee1);
 		$event->attendees = $attendees;
 		*/
+						
 		
-		$createdEvent = self::$calender->events->insert($gc_id, $event);
+		if(self::is_new()){
+			
+			$createdEvent = self::$calender->events->insert($gc_id, $event);
+		}
+		else{
+			//$event->setId($_POST['event_prev_id']);
+			//$createdEvent = self::$calender->events->update($gc_id, $_POST['event_prev_id'], $event);
+			$createdEvent = self::$calender->events->patch($gc_id, $_POST['event_prev_id'], $event);
+		}
+		
+		$_SESSION['gc_token'] = self::$client->getAccessToken();
+		
 		return $createdEvent;
 	}
-
+	
+	/*
+	 * is update or new
+	 */
+	static function is_new(){
+		if($_POST['gc_update'] == 'Y'){
+			if($_POST['gc_prev_id'] == $_POST['gc_id']){
+				return false;
+			}
+		}
+		return true;
+	}
 
 
 
@@ -108,7 +134,7 @@ class Gc_Integration{
 	 * some sanitizing fuction
 	 */
 	static function sanitized_title($et='', $pt=''){
-		if(empty($et) || $et=='') return $pt;
+		if(strlen($et) < 2) return $pt;
 		return $et;
 	}
 	
@@ -174,7 +200,8 @@ class Gc_Integration{
 	/*
 	 * initialize the GC 
 	 */
-	static function initialize_gc(){		
+	static function initialize_gc(){
+				
 		//authenticating
 		if (isset($_GET['code'])) :
 			
@@ -183,7 +210,19 @@ class Gc_Integration{
 			self::$client->authenticate();
 			$_SESSION['gc_token'] = self::$client->getAccessToken();
 			include ABSPATH . '/wp-includes/pluggable.php';
-			wp_redirect('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
+			
+			$url = get_option('site_url');
+									
+			if(isset($_SESSION['gc_redirect_url'])){
+				if(is_ssl()){
+					$url = 'https://' . $_SESSION['gc_redirect_url'];
+				}
+				else{
+					$url = 'http://' . $_SESSION['gc_redirect_url'];
+				}
+				
+			}
+			wp_redirect($url);
 			exit;
 		endif;
 		
@@ -245,9 +284,9 @@ class Gc_Integration{
 	 * metabox content
 	 */
 	static function the_box(){
-		if(empty(self::$calender)) {
-			self::set_client_calender();
-		}
+		
+		self::set_client_calender();
+		
 		global $post;
 		$gc_event = array();
 		
@@ -267,6 +306,7 @@ class Gc_Integration{
 			$_SESSION['gc_token'] = self::$client->getAccessToken();
 		}
 		else{
+			$_SESSION['gc_redirect_url'] = $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; 
 			 $authUrl = self::$client->createAuthUrl();
 			 print "<a class='login' href='$authUrl'>Connect Me!</a>";
 		}
@@ -278,9 +318,9 @@ class Gc_Integration{
 	 */
 	static function set_client_calender(){
 		
-		//if the object is initiated earlier do nothing
-		//if(isset($_SESSION['gc_token'])) return;
-		
+		//if(is_object(self::$calender)) return;
+		$url = get_option('siteurl') . '/wp-admin/google-calender/redirect=yes';
+					
 		//including the api classes
 		if(!class_exists('apiClient')) :
 			include GCALENDERDIR . '/gc-api/src/apiClient.php';
@@ -295,21 +335,26 @@ class Gc_Integration{
 		// client id, client secret, and to register your redirect uri.
 		self::$client->setClientId(trim($gc_info['client_id']));
 		self::$client->setClientSecret(trim($gc_info['client_secret']));
-		self::$client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
+		self::$client->setRedirectUri($url);
 		self::$client->setDeveloperKey(trim($gc_info['api_key']));
 		
 		self::$calender = new apiCalendarService(self::$client);
+		
+		if (isset($_SESSION['gc_token'])) {
+			self::$client->setAccessToken($_SESSION['gc_token']);
+		}
 	}
 	
 	/*
 	 * google calelnder format to normal format 
 	 */
 	static function get_normalized_date($rfc){
+		if(empty($rfc)) return '';
 		return date('m/d/Y', strtotime($rfc));
 	}
 	
 	static function get_normalized_time($rfc){
-		
-		return date('H:i', strtotime($rfc));
+		if(empty($rfc)) return '';
+		return date('h:i A', strtotime($rfc));
 	}
 }
