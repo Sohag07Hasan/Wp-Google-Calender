@@ -318,7 +318,7 @@ class Gc_Integration{
 	 */
 	static function set_client_calender(){
 		
-		//if(is_object(self::$calender)) return;
+		if(is_object(self::$calender)) return;
 		$url = get_option('siteurl') . '/wp-admin/google-calender/redirect=yes';
 					
 		//including the api classes

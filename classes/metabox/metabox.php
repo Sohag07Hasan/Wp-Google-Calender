@@ -45,12 +45,14 @@
 			<td>Event Start Date/Time</td>
 			<td><input class="gc_date_picker" size="20" name="gc-event-date_start" type="text" value="<?php echo self::get_normalized_date($gc_event['start']['dateTime']); ?>" /> </td>
 			<td><input class="gc_time_picker" size="20" name="gc-event-time_start" type="text" value="<?php echo self::get_normalized_time($gc_event['start']['dateTime']); ?>" /> </td>
+			
 		</tr>
 		
 		<tr>
 			<td>Event End Date/Time</td>
 			<td><input class="gc_date_picker" size="20" name="gc-event-date_end" type="text" value="<?php echo self::get_normalized_date($gc_event['end']['dateTime']); ?>" /> </td>
 			<td><input class="gc_time_picker" size="20" name="gc-event-time_end" type="text" value="<?php echo self::get_normalized_time($gc_event['end']['dateTime']); ?>" /> </td>
+			
 		</tr>
 		
 	</table>
