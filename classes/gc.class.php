@@ -9,6 +9,7 @@ class Gc_Integration{
 	
 	static $client;
 	static $calender;
+	static $tracker = 1;
 
 
 	/*
@@ -55,17 +56,21 @@ class Gc_Integration{
 	 */
 	static function push_to_gc($post_ID, $post){
 		if($_POST['gc_enabled'] == '1') :
+			if(self::$tracker > 1) return;
+			
 			$title = self::sanitized_title(trim($_POST['gc-event-title']), $post->post_title);
 			$des = trim($_POST['gc-event-description']);
 			$event_start = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start'])));
 			
 			$event_end = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end'])));
 			
+			
 			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
 			
 			//do_action('save_the_gc_event', $event, $post, $_POST['gc_id']);
 			self:: save_event_info($event, $post, $_POST['gc_id']);
 			
+			self::$tracker += 1;			
 		endif;
 	}
 	
@@ -73,6 +78,7 @@ class Gc_Integration{
 	 * set an event to the googel calender and return the event for further use
 	 */
 	static function set_event($title, $des, $event_start, $event_end, $gc_id){
+		
 		self::set_client_calender();		
 		
 		$event = new Event();
@@ -98,8 +104,9 @@ class Gc_Integration{
 
 		$attendees = array($attendee1);
 		$event->attendees = $attendees;
+		
+		$createdEvent = self::$calender->events->insert($gc_id, $event);
 		*/
-						
 		
 		if(self::is_new()){
 			
