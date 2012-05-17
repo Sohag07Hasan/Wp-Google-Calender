@@ -33,6 +33,16 @@
 			</tr>
 			
 			<tr>
+				<td>GMT Offset </td>
+				<td>
+					<select name="gc_gmt_time_offset">
+						<option value="">Offset</option>
+						<?php echo self::get_timezone_options($offset); ?>
+					</select>
+				</td>
+			</tr>
+			
+			<tr>
 				<td>
 					get or set everything
 				</td>

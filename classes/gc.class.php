@@ -88,15 +88,15 @@ class Gc_Integration{
 		}
 		$start = new EventDateTime();
 		$start->setDateTime($event_start);
-		$event->setStart($start);
+		//$start->setTimeZone('Asia/Dhaka');
+		
 		$end = new EventDateTime();
 		$end->setDateTime($event_end);
+		//$end->setTimeZone('Asia/Dhaka');
+		
+		$event->setStart($start);
 		$event->setEnd($end);
 		
-		/*
-		if (isset($_SESSION['gc_token'])) {
-			self::$client->setAccessToken($_SESSION['gc_token']);
-		}*/
 		
 		/*
 		$attendee1 = new EventAttendee();
@@ -154,15 +154,11 @@ class Gc_Integration{
 		 if (!$timestamp) {
 			$timestamp = time();
 		}
-		$date = date('Y-m-d\TH:i:s', $timestamp);
-
-		$matches = array();
-		if (preg_match('/^([\-+])(\d{2})(\d{2})$/', date('O', $timestamp), $matches)) {
-			$date .= $matches[1].$matches[2].':'.$matches[3];
-		} else {
-			$date .= 'Z';
-		}
-		return $date;
+		
+		$timestamp -= self::get_gmt_offset();
+		
+		return date('c', $timestamp);
+				
 	}
 
 
@@ -258,11 +254,26 @@ class Gc_Integration{
 			);
 			
 			update_option('gc_app_info', $gc_data);
+			update_option('gc_gmt_time_offset', trim($_POST['gc_gmt_time_offset']));
 		}
 		
 		$gc = get_option('gc_app_info');
+		$offset = get_option('gc_gmt_time_offset');
 		
 		include dirname(__FILE__) . '/includes/options-page.php';
+	}
+	
+	
+	/*
+	 * returns the GMT time offset
+	 */
+	static function get_gmt_offset(){
+		$offset = get_option('gc_gmt_time_offset');
+		if($offset){
+			return $offset * 3600;
+		}
+		
+		return 0;
 	}
 	
 	
@@ -357,11 +368,61 @@ class Gc_Integration{
 	 */
 	static function get_normalized_date($rfc){
 		if(empty($rfc)) return '';
-		return date('m/d/Y', strtotime($rfc));
+		
+		$rfc = strtotime($rfc) + self::get_gmt_offset();
+		return date('m/d/Y', $rfc);
 	}
 	
 	static function get_normalized_time($rfc){
 		if(empty($rfc)) return '';
-		return date('h:i A', strtotime($rfc));
+		
+		$rfc = strtotime($rfc) + self::get_gmt_offset();
+		return date('h:i A',$rfc);
+	}
+	
+	/*
+	 * return timezone array
+	 */
+	static function get_timezones(){
+		$a = array();
+		$i = -12;
+		while($i<=12){	
+			$k = $i;
+			if($k >= 0){
+				$k = '+' . $k;
+			}
+
+			$k = explode('.',$k);
+			if(isset($k[1]) && $k[1] == .5){
+				$j = $k[0] . ':30';
+			}
+			else{
+				$j = $k[0];
+			}	
+
+			if(fmod($i, 2) == 0 || fmod($i, 2) == 1){
+				$a[] = array($i, 'GMT ' . $j);
+			}
+			else{
+				$a[] = array($i, 'GMT ' . $j . ':30');
+			}
+
+			$i += 0.5;
+		}
+		
+		return $a;
+	}
+	
+	/*
+	 * get_timezones option
+	 */
+	static function get_timezone_options($offset){
+		$str = '';
+		$timezones = self::get_timezones();
+		foreach($timezones as $timezone){
+			$str .= '<option ' . selected($timezone[0], $offset) . ' value="' . $timezone[0] . '">' . $timezone[1] . '</option>';
+		}
+		
+		return $str;
 	}
 }
