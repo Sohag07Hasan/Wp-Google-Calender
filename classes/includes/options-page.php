@@ -35,9 +35,9 @@
 			<tr>
 				<td>GMT Offset </td>
 				<td>
-					<select name="gc_gmt_time_offset">
-						<option value="">Offset</option>
-						<?php echo self::get_timezone_options($offset); ?>
+					<select name="gc_timezone">
+						<option value="">Select a Timezone</option>
+						<?php echo self::get_timezone_options($timezone); ?>
 					</select>
 				</td>
 			</tr>

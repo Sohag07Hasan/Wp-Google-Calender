@@ -60,9 +60,9 @@ class Gc_Integration{
 			
 			$title = self::sanitized_title(trim($_POST['gc-event-title']), $post->post_title);
 			$des = trim($_POST['gc-event-description']);
-			$event_start = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start'])));
+			$event_start = self::sanitized_datetime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start']));
 			
-			$event_end = self::sanitized_datetime(strtotime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end'])));
+			$event_end = self::sanitized_datetime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end']));
 			
 			
 			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
@@ -149,15 +149,14 @@ class Gc_Integration{
 	/*
 	 * format the date and time to the google calender format
 	 */
-	static function sanitized_datetime($timestamp=0){
+	static function sanitized_datetime($date_time){
+		if(strlen($date_time) < 5) return;
 		
-		 if (!$timestamp) {
-			$timestamp = time();
-		}
+		$dt = new DateTime($date_time, new DateTimeZone(self::get_timezone()));				
 		
-		$timestamp -= self::get_gmt_offset();
+		//$timestamp -= self::get_gmt_offset();
 		
-		return date('c', $timestamp);
+		return $dt->format('c');
 				
 	}
 
@@ -254,26 +253,22 @@ class Gc_Integration{
 			);
 			
 			update_option('gc_app_info', $gc_data);
-			update_option('gc_gmt_time_offset', trim($_POST['gc_gmt_time_offset']));
+			update_option('gc_timezone', trim($_POST['gc_timezone']));
 		}
 		
 		$gc = get_option('gc_app_info');
-		$offset = get_option('gc_gmt_time_offset');
+		$timezone = get_option('gc_timezone');
 		
 		include dirname(__FILE__) . '/includes/options-page.php';
 	}
 	
 	
 	/*
-	 * returns the GMT time offset
+	 * returns the timezone
 	 */
-	static function get_gmt_offset(){
-		$offset = get_option('gc_gmt_time_offset');
-		if($offset){
-			return $offset * 3600;
-		}
+	static function get_timezone(){
+		return get_option('gc_timezone');				
 		
-		return 0;
 	}
 	
 	
@@ -369,60 +364,31 @@ class Gc_Integration{
 	static function get_normalized_date($rfc){
 		if(empty($rfc)) return '';
 		
-		$rfc = strtotime($rfc) + self::get_gmt_offset();
-		return date('m/d/Y', $rfc);
+		$dt = new DateTime($rfc, new DateTimeZone(self::get_timezone()));
+		//$rfc = strtotime($rfc) + self::get_gmt_offset();
+		return $dt->format('m/d/Y');
 	}
 	
 	static function get_normalized_time($rfc){
 		if(empty($rfc)) return '';
 		
-		$rfc = strtotime($rfc) + self::get_gmt_offset();
-		return date('h:i A',$rfc);
+		$dt = new DateTime($rfc, new DateTimeZone(self::get_timezone()));
+		//$rfc = strtotime($rfc) + self::get_gmt_offset();
+		return $dt->format('h:i A');
 	}
 	
-	/*
-	 * return timezone array
-	 */
-	static function get_timezones(){
-		$a = array();
-		$i = -12;
-		while($i<=12){	
-			$k = $i;
-			if($k >= 0){
-				$k = '+' . $k;
-			}
-
-			$k = explode('.',$k);
-			if(isset($k[1]) && $k[1] == .5){
-				$j = $k[0] . ':30';
-			}
-			else{
-				$j = $k[0];
-			}	
-
-			if(fmod($i, 2) == 0 || fmod($i, 2) == 1){
-				$a[] = array($i, 'GMT ' . $j);
-			}
-			else{
-				$a[] = array($i, 'GMT ' . $j . ':30');
-			}
-
-			$i += 0.5;
-		}
-		
-		return $a;
-	}
+	
 	
 	/*
 	 * get_timezones option
 	 */
-	static function get_timezone_options($offset){
-		$str = '';
-		$timezones = self::get_timezones();
-		foreach($timezones as $timezone){
-			$str .= '<option ' . selected($timezone[0], $offset) . ' value="' . $timezone[0] . '">' . $timezone[1] . '</option>';
+	static function get_timezone_options($selected){
+		$option = '';
+		$zones = DateTimeZone::listIdentifiers();
+		foreach($zones as $zone){
+			$option .= '<option ' . selected($zone, $selected) . ' value="' . $zone . '">' . $zone . '</option>';
 		}
 		
-		return $str;
+		return $option;
 	}
 }
