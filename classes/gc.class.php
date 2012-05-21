@@ -58,11 +58,14 @@ class Gc_Integration{
 		if($_POST['gc_enabled'] == '1') :
 			if(self::$tracker > 1) return;
 			
+			$start_time = trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start']);
+			$end_time = trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end']);
+			
 			$title = self::sanitized_title(trim($_POST['gc-event-title']), $post->post_title);
 			$des = trim($_POST['gc-event-description']);
-			$event_start = self::sanitized_datetime(trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start']));
+			$event_start = self::sanitized_datetime($start_time);
 			
-			$event_end = self::sanitized_datetime(trim($_POST['gc-event-date_end']) . ' ' . trim($_POST['gc-event-time_end']));
+			$event_end = self::sanitized_datetime($end_time);
 			
 			
 			$event = self::set_event($title, $des, $event_start, $event_end, $_POST['gc_id']);
@@ -91,7 +94,7 @@ class Gc_Integration{
 		//$start->setTimeZone('Asia/Dhaka');
 		
 		$end = new EventDateTime();
-		if(!$event_end) $event_end = $event_start;
+		
 		
 		$end->setDateTime($event_end);
 		//$end->setTimeZone('Asia/Dhaka');
@@ -152,9 +155,15 @@ class Gc_Integration{
 	 * format the date and time to the google calender format
 	 */
 	static function sanitized_datetime($date_time){
-		if(strlen($date_time) < 5) return;
-		
-		$dt = new DateTime($date_time, new DateTimeZone(self::get_timezone()));				
+		if(strlen($date_time) < 5){
+			$date_time = trim($_POST['gc-event-date_start']) . ' ' . trim($_POST['gc-event-time_start']);
+			$dt = new DateTime($date_time, new DateTimeZone(self::get_timezone()));
+			$timestamp = $dt->getTimestamp() + 3600;
+			$dt->setTimestamp($timestamp);
+		}
+		else{		
+			$dt = new DateTime($date_time, new DateTimeZone(self::get_timezone()));
+		}
 		
 		//$timestamp -= self::get_gmt_offset();
 		
