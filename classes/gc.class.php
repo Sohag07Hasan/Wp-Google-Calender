@@ -91,6 +91,8 @@ class Gc_Integration{
 		//$start->setTimeZone('Asia/Dhaka');
 		
 		$end = new EventDateTime();
+		if(!$event_end) $event_end = $event_start;
+		
 		$end->setDateTime($event_end);
 		//$end->setTimeZone('Asia/Dhaka');
 		

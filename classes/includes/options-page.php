@@ -33,7 +33,7 @@
 			</tr>
 			
 			<tr>
-				<td>GMT Offset </td>
+				<td>Time Zone </td>
 				<td>
 					<select name="gc_timezone">
 						<option value="">Select a Timezone</option>
